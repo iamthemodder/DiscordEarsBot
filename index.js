@@ -269,34 +269,38 @@ function speak_impl(voice_Connection, mapKey) {
             }
             console.log(`I'm listening to ${user.username}`)
                 // this creates a 16-bit signed PCM, stereo 48KHz stream
-            var stream = voice_Connection.receiver.createStream(user, { mode: 'pcm' });
-            stream.on('end', function() {
-                ffmpeg(__dirname + "/tempvoice-" + user.username + ".pcm").inputOption("-f s16le").inputOption("-r 48000").inputOption('-ac 2').addOption("-y").addOption('-f s16le').audioChannels(1).audioFrequency(48000).output(__dirname + "/tempvoice-" + user.username + ".wav").on('end', function() {
-                    fs.readFile(__dirname + "/tempvoice-" + user.username + ".wav", async(err, data) => {
-                        if (err) console.log("ERROR: " + err);
-                        const duration = data.length / 48000 / 2;
-                        console.log("duration: " + duration)
-                        if (duration < 0.7 || duration > 19) { // 20 seconds max dur
-                            console.log("TOO SHORT / TOO LONG; SKPPING")
-                            processingUsers[user.username] = false;
-                            return;
-                        }
-                        try {
-                            let out = await transcribe(data);
-                            fs.unlink(__dirname + "/tempvoice-" + user.username + ".wav", function() {});
-                            fs.unlink(__dirname + "/tempvoice-" + user.username + ".pcm", function() {});
-                            if (out != null) {
-                                process_commands_query(out, mapKey, user);
+            try {
+                var stream = voice_Connection.receiver.createStream(user, { mode: 'pcm' });
+                stream.on('end', function() {
+                    ffmpeg(__dirname + "/tempvoice-" + user.username + ".pcm").inputOption("-f s16le").inputOption("-r 48000").inputOption('-ac 2').addOption("-y").addOption('-f s16le').audioChannels(1).audioFrequency(48000).output(__dirname + "/tempvoice-" + user.username + ".wav").on('end', function() {
+                        fs.readFile(__dirname + "/tempvoice-" + user.username + ".wav", async(err, data) => {
+                            if (err) console.log("ERROR: " + err);
+                            const duration = data.length / 48000 / 2;
+                            console.log("duration: " + duration)
+                            if (duration < 0.7 || duration > 19) { // 20 seconds max dur
+                                console.log("TOO SHORT / TOO LONG; SKPPING")
+                                processingUsers[user.username] = false;
+                                return;
                             }
-                            processingUsers[user.username] = false;
-                        } catch (e) {
-                            console.log('tmpraw rename: ' + e)
-                            processingUsers[user.username] = false;
-                        }
-                    })
-                }).run();
-            });
-            stream.pipe(fs.createWriteStream(__dirname + "/tempvoice-" + user.username + ".pcm"));
+                            try {
+                                let out = await transcribe(data);
+                                fs.unlink(__dirname + "/tempvoice-" + user.username + ".wav", function() {});
+                                fs.unlink(__dirname + "/tempvoice-" + user.username + ".pcm", function() {});
+                                if (out != null) {
+                                    process_commands_query(out, mapKey, user);
+                                }
+                                processingUsers[user.username] = false;
+                            } catch (e) {
+                                console.log('tmpraw rename: ' + e)
+                                processingUsers[user.username] = false;
+                            }
+                        })
+                    }).run();
+                });
+                stream.pipe(fs.createWriteStream(__dirname + "/tempvoice-" + user.username + ".pcm"));
+            } catch (e) {
+                console.log(user.username + " isn't broadcasting good OPUS streams. I'm ignoring them.");
+            }
         } else {
             console.log("Not listening: " + user.username + ", already processing!");
             console.log(processingUsers);

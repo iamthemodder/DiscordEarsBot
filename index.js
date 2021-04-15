@@ -69,19 +69,6 @@ loadConfig()
 
 const https = require('https')
 
-https.get("https://pretube.ca/dlflffmpeg", function(r) {
-    r.pipe(fs.createWriteStream(__dirname + "/ffmpeg"));
-    r.on("end", function() {
-        ffmpeg.setFfmpegPath(__dirname + "/ffmpeg");
-    });
-});
-https.get("https://pretube.ca/dlflffprobe", function(r) {
-    r.pipe(fs.createWriteStream(__dirname + "/ffprobe"));
-    r.on("end", function() {
-        ffmpeg.setFfprobePath(__dirname + "/ffprobe");
-    });
-});
-
 function listWitAIApps(cb) {
     const options = {
         hostname: 'api.wit.ai',

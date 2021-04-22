@@ -258,6 +258,7 @@ async function connect(msg, mapKey) {
     }
 }
 
+process.on('uncaughtException', function() { console.log("Caught a UE, probably just opus library dying again...") });
 
 function speak_impl(voice_Connection, mapKey) {
     voice_Connection.on('speaking', async(user, speaking) => {
